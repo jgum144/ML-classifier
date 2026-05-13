@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iris Classifier | AI Flower Species Recognition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --accent-success: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            padding: 2rem;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-dim);
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 0.8rem 1rem;
+            color: white;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            background: rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+        }
+
+        .unit {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        button {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 1rem;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+            transform: scale(1.02);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        #result-card {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            min-height: 400px;
+            opacity: 0.5;
+            transition: opacity 0.5s ease;
+        }
+
+        #result-card.active {
+            opacity: 1;
+        }
+
+        .prediction-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            margin-bottom: 0.5rem;
+        }
+
+        .flower-name {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            text-transform: capitalize;
+        }
+
+        .confidence-badge {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-success);
+            padding: 0.4rem 1rem;
+            border-radius: 100px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+        }
+
+        .prob-bars {
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        .prob-item {
+            margin-bottom: 1rem;
+        }
+
+        .prob-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .progress-bg {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 100px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .empty-state {
+            color: var(--text-dim);
+            font-style: italic;
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* Loading state */
+        .loader {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Decorative blobs */
+        .blob {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(192, 132, 252, 0.2) 100%);
+            filter: blur(80px);
+            border-radius: 50%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .blob-1 {
+            top: -10%;
+            left: -10%;
+        }
+
+        .blob-2 {
+            bottom: -10%;
+            right: -10%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <div class="container">
+        <header>
+            <h1>Iris Flower Classifier</h1>
+            <p class="subtitle">AI-powered botanical species identification</p>
+        </header>
+
+        <div class="main-grid">
+            <div class="card">
+                <form id="prediction-form">
+                    <div class="input-group">
+                        <label for="sepal_length">Sepal Length</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="sepal_length" step="0.1" value="5.1" required>
+                            <span class="unit">cm</span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="sepal_width">Sepal Width</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="sepal_width" step="0.1" value="3.5" required>
+                            <span class="unit">cm</span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="petal_length">Petal Length</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="petal_length" step="0.1" value="1.4" required>
+                            <span class="unit">cm</span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="petal_width">Petal Width</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="petal_width" step="0.1" value="0.2" required>
+                            <span class="unit">cm</span>
+                        </div>
+                    </div>
+                    <button type="submit" id="submit-btn">
+                        <span>Analyze Sample</span>
+                        <div class="loader" id="loader"></div>
+                    </button>
+                </form>
+            </div>
+
+            <div class="card" id="result-card">
+                <div id="empty-state" class="empty-state">
+                    Enter flower measurements to begin classification
+                </div>
+                <div id="result-content" style="display: none; width: 100%;">
+                    <div class="prediction-label">AI Prediction</div>
+                    <div id="prediction-name" class="flower-name">Setosa</div>
+                    <div id="confidence-badge" class="confidence-badge">98.5% Confidence</div>
+
+                    <div class="prob-bars">
+                        <div class="prob-item">
+                            <div class="prob-info">
+                                <span>Setosa</span>
+                                <span id="prob-setosa">98.5%</span>
+                            </div>
+                            <div class="progress-bg">
+                                <div id="bar-setosa" class="progress-fill"></div>
+                            </div>
+                        </div>
+                        <div class="prob-item">
+                            <div class="prob-info">
+                                <span>Versicolor</span>
+                                <span id="prob-versicolor">1.2%</span>
+                            </div>
+                            <div class="progress-bg">
+                                <div id="bar-versicolor" class="progress-fill"></div>
+                            </div>
+                        </div>
+                        <div class="prob-item">
+                            <div class="prob-info">
+                                <span>Virginica</span>
+                                <span id="prob-virginica">0.3%</span>
+                            </div>
+                            <div class="progress-bg">
+                                <div id="bar-virginica" class="progress-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('prediction-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const btn = document.getElementById('submit-btn');
+            const loader = document.getElementById('loader');
+            const btnText = btn.querySelector('span');
+
+            // UI Loading State
+            btnText.style.display = 'none';
+            loader.style.display = 'block';
+            btn.disabled = true;
+
+            const formData = {
+                sepal_length: document.getElementById('sepal_length').value,
+                sepal_width: document.getElementById('sepal_width').value,
+                petal_length: document.getElementById('petal_length').value,
+                petal_width: document.getElementById('petal_width').value
+            };
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    displayResult(data);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Connection error. Is the server running?');
+            } finally {
+                btnText.style.display = 'block';
+                loader.style.display = 'none';
+                btn.disabled = false;
+            }
+        });
+
+        function displayResult(data) {
+            const resultCard = document.getElementById('result-card');
+            const emptyState = document.getElementById('empty-state');
+            const resultContent = document.getElementById('result-content');
+
+            emptyState.style.display = 'none';
+            resultContent.style.display = 'block';
+            resultCard.classList.add('active');
+
+            document.getElementById('prediction-name').innerText = data.class;
+            document.getElementById('confidence-badge').innerText = data.confidence.toFixed(1) + '% Confidence';
+
+            // Update probability bars
+            Object.keys(data.probabilities).forEach(name => {
+                const prob = data.probabilities[name];
+                const span = document.getElementById(`prob-${name}`);
+                const bar = document.getElementById(`bar-${name}`);
+
+                if (span && bar) {
+                    span.innerText = prob.toFixed(1) + '%';
+                    bar.style.width = prob + '%';
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>
